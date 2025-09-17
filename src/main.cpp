@@ -18,15 +18,29 @@ float Lerp(float A, float B, float Alpha) {
   return A * (1 - Alpha) + B * Alpha;
 }
 
+
 struct ground{
     int x,y,x2,y2;
 };
 std::vector<ground> groundvector;
 struct entity{
     int x=0,y=0;
+    float yvelocity=0;
     int vertx=-8,verty=-16,vertx2=8,verty2=0;
 };
 entity player;
+
+bool overlap(entity p,ground g)
+{
+   if (p.vertx > g.x2 || g.x > p.vertx2)
+        return false;
+
+    if (p.verty2 > g.y || g.y2 > p.verty)
+        return false;
+
+    return true;
+}
+
 void windowset(){
     while (const std::optional event = window.pollEvent()) {
       if (event->is<sf::Event::Closed>()) {
@@ -49,8 +63,18 @@ void keypresscheck(sf::Keyboard::Key keycode, char* key) {
 
 void update() {
   view.setCenter({Lerp(view.getCenter().x,float(player.x),0.5f),Lerp(view.getCenter().y,float(player.y),0.5f)});
+  bool groundcheck=false;
+  for(int i=0;i<groundvector.size();i++){
+    if(overlap(player,groundvector[i])){groundcheck=true;break;}
+  }
+
+  if(!groundcheck)player.yvelocity++;
   if(right>0)player.x+=2;
   if(left>0)player.x-=2;
+  if(confirm==2&&groundcheck)player.yvelocity=-5;
+  player.y+=player.yvelocity;
+
+  
 }
 
 void input(){
