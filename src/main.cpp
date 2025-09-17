@@ -1,21 +1,104 @@
+// Copyright 2025 Greenbox
 #include <SFML/Graphics.hpp>
+#include <vector>
+sf::RenderTexture rt({160, 144});
+auto window = sf::RenderWindow(sf::VideoMode({160, 144}), "The game trademark");
+char right = 0, down = 0, up = 0, left = 0, confirm = 0, cancel = 0, select = 0,start = 0;
+sf::Keyboard::Key rightkey = sf::Keyboard::Key::Right,
+                  downkey = sf::Keyboard::Key::Down,
+                  upkey = sf::Keyboard::Key::Up,
+                  leftkey = sf::Keyboard::Key::Left,
+                  confirmkey = sf::Keyboard::Key::Z,
+                  cancelkey = sf::Keyboard::Key::X,
+                  startkey = sf::Keyboard::Key::Enter,
+                  selectkey = sf::Keyboard::Key::C;
+sf::View view({0.f, 0.f}, {160.f, 144.f});
 
-int main()
-{
-    auto window = sf::RenderWindow(sf::VideoMode({1920u, 1080u}), "CMake SFML Project");
-    window.setFramerateLimit(144);
+float Lerp(float A, float B, float Alpha) {
+  return A * (1 - Alpha) + B * Alpha;
+}
 
-    while (window.isOpen())
-    {
-        while (const std::optional event = window.pollEvent())
-        {
-            if (event->is<sf::Event::Closed>())
-            {
-                window.close();
-            }
-        }
-
-        window.clear();
-        window.display();
+struct ground{
+    int x,y,x2,y2;
+};
+std::vector<ground> groundvector;
+struct entity{
+    int x=0,y=0;
+    int vertx=-8,verty=-16,vertx2=8,verty2=0;
+};
+entity player;
+void windowset(){
+    while (const std::optional event = window.pollEvent()) {
+      if (event->is<sf::Event::Closed>()) {
+        window.close();
+      }
     }
+}
+
+void keypresscheck(sf::Keyboard::Key keycode, char* key) {
+  if (sf::Keyboard::isKeyPressed(keycode)) {
+    if (*key == 0)
+      *key = 2;
+    else if (*key == 2)
+      *key = 1;
+  } else {
+    *key = 0;
+  }
+}
+
+
+void update() {
+  view.setCenter({Lerp(view.getCenter().x,float(player.x),0.5f),Lerp(view.getCenter().y,float(player.y),0.5f)});
+  if(right>0)player.x+=2;
+  if(left>0)player.x-=2;
+}
+
+void input(){
+  keypresscheck(rightkey,&right);
+  keypresscheck(leftkey,&left);
+  keypresscheck(upkey,&up);
+  keypresscheck(downkey,&down);
+  keypresscheck(confirmkey,&confirm);
+  keypresscheck(cancelkey,&cancel);
+  keypresscheck(startkey,&start);
+  keypresscheck(selectkey,&select);
+}
+
+void render() {
+  rt.setView(view);
+  window.clear();
+  rt.clear();
+  sf::VertexArray tri(sf::PrimitiveType::TriangleStrip, 4);
+  for(int i=0;i<groundvector.size();i++){
+    tri[0].position=sf::Vector2f(groundvector[i].x,groundvector[i].y);
+    tri[1].position=sf::Vector2f(groundvector[i].x2,groundvector[i].y);
+    tri[2].position=sf::Vector2f(groundvector[i].x,groundvector[i].y2);
+    tri[3].position=sf::Vector2f(groundvector[i].x2,groundvector[i].y2);
+    rt.draw(tri);
+  }
+  tri[0].position=sf::Vector2f(player.x+player.vertx,player.y+player.verty);
+  tri[1].position=sf::Vector2f(player.x+player.vertx2,player.y+player.verty);
+  tri[2].position=sf::Vector2f(player.x+player.vertx,player.y+player.verty2);
+  tri[3].position=sf::Vector2f(player.x+player.vertx2,player.y+player.verty2);
+  rt.draw(tri);
+
+  rt.display();
+  sf::Sprite temp(rt.getTexture());
+  window.draw(temp);
+  window.display();
+}
+void init() {
+  window.setFramerateLimit(60);
+  groundvector.resize(1);
+  groundvector[0]=ground{-64,0,64,16};
+}
+int main() {
+  init();
+  while (window.isOpen()) {
+    windowset();
+    input();
+    update();
+    render();
+  }
+  return 0;
 }
