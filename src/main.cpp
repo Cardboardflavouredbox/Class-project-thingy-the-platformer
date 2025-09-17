@@ -177,9 +177,10 @@ void render() {
 }
 void init() {
   window.setFramerateLimit(60);
-  groundvector.resize(2);
+  groundvector.resize(3);
   groundvector[0]=ground{-64,0,64,16};
   groundvector[1]=ground{32,-64,64,0};
+  groundvector[2]=ground{-64,-64,-32,0};
 }
 int main() {
   init();
