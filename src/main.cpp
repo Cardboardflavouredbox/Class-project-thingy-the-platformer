@@ -88,6 +88,30 @@ void update() {
   }
   if(!groundcheck)player.y--;
 
+  bool rightwallcheck=false;
+  player.x++;
+  for(int i=0;i<groundvector.size();i++){
+    if(overlap(player,groundvector[i])){
+      rightwallcheck=true;
+      player.xvelocity=0;
+      while(overlap(player,groundvector[i]))player.x--;
+      break;
+      }
+  }
+  if(!rightwallcheck)player.x--;
+
+  bool leftwallcheck=false;
+  player.x--;
+  for(int i=0;i<groundvector.size();i++){
+    if(overlap(player,groundvector[i])){
+      leftwallcheck=true;
+      player.xvelocity=0;
+      while(overlap(player,groundvector[i]))player.x++;
+      break;
+      }
+  }
+  if(!leftwallcheck)player.x++;
+
   if(groundcheck)player.yvelocity=0;
   else player.yvelocity+=0.5f;
   if(right>0)player.xvelocity+=0.5;
@@ -98,7 +122,19 @@ void update() {
   }
   if(player.xvelocity>2)player.xvelocity-=0.5;
   if(player.xvelocity<-2)player.xvelocity+=0.5;
-  if(confirm==2&&groundcheck)player.yvelocity=-7;
+  if(confirm==2){
+    if(groundcheck)player.yvelocity=-7;
+    else{
+      if(leftwallcheck){
+        player.yvelocity=-5;
+        player.xvelocity=2;
+      }
+      else if(rightwallcheck){
+        player.yvelocity=-5;
+        player.xvelocity=-2;
+      }
+    }
+  }
   player.x+=player.xvelocity;
   player.y+=player.yvelocity;
 
