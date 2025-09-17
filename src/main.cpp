@@ -25,28 +25,42 @@ struct ground{
 std::vector<ground> groundvector;
 struct entity{
     int x=0,y=0;
-    float yvelocity=0;
-    int vertx=-8,verty=-16,vertx2=8,verty2=0;
+    float xvelocity=0,yvelocity=0;
+    int vertx=-4,verty=-8,vertx2=4,verty2=0;
 };
 entity player;
 
 bool overlap(entity p,ground g)
 {
-   if (p.vertx > g.x2 || g.x > p.vertx2)
+   if (p.vertx+p.x >= g.x2 || g.x >= p.vertx2+p.x )
         return false;
 
-    if (p.verty2 > g.y || g.y2 > p.verty)
+    if (p.verty2+p.y  <= g.y || g.y2 <= p.verty+p.y)
         return false;
 
     return true;
 }
 
 void windowset(){
-    while (const std::optional event = window.pollEvent()) {
-      if (event->is<sf::Event::Closed>()) {
-        window.close();
-      }
+  while (std::optional event = window.pollEvent()) {
+    if (event->is<sf::Event::Closed>()) {
+      window.close();
     }
+
+    if (auto resized = event->getIf<sf::Event::Resized>()) {
+      float x, y;
+      if ((resized->size.x) > (resized->size.y)) {
+        y = 144;
+        x = (float(resized->size.x) / float(resized->size.y) * 144.f);
+      } else {
+        x = 160;
+        y = (float(resized->size.y) / float(resized->size.x) * 160.f);
+      }
+      sf::FloatRect visibleArea({(-x + 160.f) / 2, (-y + 144.f) / 2}, {x, y});
+
+      window.setView(sf::View(visibleArea));
+    }
+  }
 }
 
 void keypresscheck(sf::Keyboard::Key keycode, char* key) {
@@ -64,14 +78,28 @@ void keypresscheck(sf::Keyboard::Key keycode, char* key) {
 void update() {
   view.setCenter({Lerp(view.getCenter().x,float(player.x),0.5f),Lerp(view.getCenter().y,float(player.y),0.5f)});
   bool groundcheck=false;
+  player.y++;
   for(int i=0;i<groundvector.size();i++){
-    if(overlap(player,groundvector[i])){groundcheck=true;break;}
+    if(overlap(player,groundvector[i])){
+      groundcheck=true;
+      while(overlap(player,groundvector[i]))player.y--;
+      break;
+      }
   }
+  if(!groundcheck)player.y--;
 
-  if(!groundcheck)player.yvelocity++;
-  if(right>0)player.x+=2;
-  if(left>0)player.x-=2;
-  if(confirm==2&&groundcheck)player.yvelocity=-5;
+  if(groundcheck)player.yvelocity=0;
+  else player.yvelocity+=0.5f;
+  if(right>0)player.xvelocity+=0.5;
+  else if(left>0)player.xvelocity-=0.5;
+  else{
+    if(player.xvelocity>0)player.xvelocity-=0.5f;
+    else if(player.xvelocity<0)player.xvelocity+=0.5f;
+  }
+  if(player.xvelocity>2)player.xvelocity-=0.5;
+  if(player.xvelocity<-2)player.xvelocity+=0.5;
+  if(confirm==2&&groundcheck)player.yvelocity=-7;
+  player.x+=player.xvelocity;
   player.y+=player.yvelocity;
 
   
@@ -113,8 +141,9 @@ void render() {
 }
 void init() {
   window.setFramerateLimit(60);
-  groundvector.resize(1);
+  groundvector.resize(2);
   groundvector[0]=ground{-64,0,64,16};
+  groundvector[1]=ground{32,-64,64,0};
 }
 int main() {
   init();
