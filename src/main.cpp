@@ -13,6 +13,9 @@ sf::Keyboard::Key rightkey = sf::Keyboard::Key::Right,
                   startkey = sf::Keyboard::Key::Enter,
                   selectkey = sf::Keyboard::Key::C;
 sf::View view({0.f, 0.f}, {160.f, 144.f});
+bool groundcheck=false;
+bool rightwallcheck=false;
+bool leftwallcheck=false;
 
 float Lerp(float A, float B, float Alpha) {
   return A * (1 - Alpha) + B * Alpha;
@@ -74,10 +77,8 @@ void keypresscheck(sf::Keyboard::Key keycode, char* key) {
   }
 }
 
-
-void update() {
-  view.setCenter({Lerp(view.getCenter().x,float(player.x),0.5f),Lerp(view.getCenter().y,float(player.y),0.5f)});
-  bool groundcheck=false;
+void collisioncheck(){
+  groundcheck=false;
   player.y++;
   for(int i=0;i<groundvector.size();i++){
     if(overlap(player,groundvector[i])){
@@ -88,29 +89,36 @@ void update() {
   }
   if(!groundcheck)player.y--;
 
-  bool rightwallcheck=false;
+  rightwallcheck=false;
   player.x++;
   for(int i=0;i<groundvector.size();i++){
     if(overlap(player,groundvector[i])){
       rightwallcheck=true;
-      player.xvelocity=0;
+      if(player.xvelocity>0)player.xvelocity=0;
       while(overlap(player,groundvector[i]))player.x--;
       break;
       }
   }
   if(!rightwallcheck)player.x--;
 
-  bool leftwallcheck=false;
+  leftwallcheck=false;
   player.x--;
   for(int i=0;i<groundvector.size();i++){
     if(overlap(player,groundvector[i])){
       leftwallcheck=true;
-      player.xvelocity=0;
+      if(player.xvelocity<0)player.xvelocity=0;
       while(overlap(player,groundvector[i]))player.x++;
       break;
       }
   }
   if(!leftwallcheck)player.x++;
+}
+
+
+void update() {
+  view.setCenter({Lerp(view.getCenter().x,float(player.x),0.5f),Lerp(view.getCenter().y,float(player.y),0.5f)});
+  
+  collisioncheck();
 
   if(groundcheck)player.yvelocity=0;
   else player.yvelocity+=0.5f;
@@ -135,6 +143,7 @@ void update() {
       }
     }
   }
+  collisioncheck();
   player.x+=player.xvelocity;
   player.y+=player.yvelocity;
 
