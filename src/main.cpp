@@ -13,7 +13,7 @@ sf::Keyboard::Key rightkey = sf::Keyboard::Key::Right,
                   startkey = sf::Keyboard::Key::Enter,
                   selectkey = sf::Keyboard::Key::C;
 sf::View view({0.f, 0.f}, {160.f, 144.f});
-bool groundcheck=false,doublejump=true;
+bool groundcheck=false,doublejump=true,dash=true,floating=false;
 
 float Lerp(float A, float B, float Alpha) {
   return A * (1 - Alpha) + B * Alpha;
@@ -28,15 +28,16 @@ struct entity{
     int x=0,y=0;
     float xvelocity=0,yvelocity=0;
     int vertx=-4,verty=-1,vertx2=4,verty2=0;
+    int hitboxx1=-4,hitboxy1=-8,hitboxx2=4,hitboxy2=0;
 };
 entity player;
 
 bool overlap(entity p,ground g)
 {
-   if (p.vertx+p.x >= g.x2 || g.x >= p.vertx2+p.x )
+   if (p.vertx+p.x >= g.x+g.x2 || g.x >= p.vertx2+p.x )
         return false;
 
-    if (p.verty2+p.y  <= g.y || g.y2 <= p.verty+p.y)
+    if (p.verty2+p.y  <= g.y || g.y2+g.y <= p.verty+p.y)
         return false;
 
     return true;
@@ -95,17 +96,25 @@ void update() {
   collisioncheck();
 
   if(groundcheck){player.yvelocity=0;doublejump=true;}
-  else player.yvelocity+=0.5f;
+  else player.yvelocity+=0.5f*(floating&&player.yvelocity>0?0.125f:1);
 
   if(player.xvelocity>2)player.xvelocity-=0.5f;
 
   if(player.xvelocity>2)player.xvelocity-=0.5;
   if(player.xvelocity<2)player.xvelocity=2;
+  if(player.xvelocity==2&&groundcheck)dash=true;
   if(confirm==2){
+    floating=false;
     if(groundcheck)player.yvelocity=-7;
     else if(doublejump){doublejump=false;player.yvelocity=-7;}
   }
-  if(select==2&&player.xvelocity==2){
+  else if(confirm==1){
+    floating=true;
+  }
+  else floating=false;
+  if(select==2&&dash){
+    floating=false;
+    dash=false;
     player.xvelocity=10;
   }
   collisioncheck();
@@ -134,13 +143,21 @@ void render() {
   window.clear();
   rt.clear();
   sf::VertexArray tri(sf::PrimitiveType::TriangleStrip, 4);
+  for(int i=0;i<4;i++)tri[i].color=sf::Color::White;
   for(int i=0;i<groundvector.size();i++){
     tri[0].position=sf::Vector2f(groundvector[i].x,groundvector[i].y);
-    tri[1].position=sf::Vector2f(groundvector[i].x2,groundvector[i].y);
-    tri[2].position=sf::Vector2f(groundvector[i].x,groundvector[i].y2);
-    tri[3].position=sf::Vector2f(groundvector[i].x2,groundvector[i].y2);
+    tri[1].position=sf::Vector2f(groundvector[i].x+groundvector[i].x2,groundvector[i].y);
+    tri[2].position=sf::Vector2f(groundvector[i].x,groundvector[i].y+groundvector[i].y2);
+    tri[3].position=sf::Vector2f(groundvector[i].x+groundvector[i].x2,groundvector[i].y+groundvector[i].y2);
     rt.draw(tri);
   }
+  for(int i=0;i<4;i++)tri[i].color=sf::Color::Blue;
+  tri[0].position=sf::Vector2f(player.x+player.hitboxx1,player.y+player.hitboxy1);
+  tri[1].position=sf::Vector2f(player.x+player.hitboxx2,player.y+player.hitboxy1);
+  tri[2].position=sf::Vector2f(player.x+player.hitboxx1,player.y+player.hitboxy2);
+  tri[3].position=sf::Vector2f(player.x+player.hitboxx2,player.y+player.hitboxy2);
+  rt.draw(tri);
+  for(int i=0;i<4;i++)tri[i].color=sf::Color::Green;
   tri[0].position=sf::Vector2f(player.x+player.vertx,player.y+player.verty);
   tri[1].position=sf::Vector2f(player.x+player.vertx2,player.y+player.verty);
   tri[2].position=sf::Vector2f(player.x+player.vertx,player.y+player.verty2);
@@ -157,10 +174,10 @@ void init() {
   window.setFramerateLimit(60);
   window.setVerticalSyncEnabled(true);
   groundvector.resize(3);
-  groundvector[0]=ground{-64,0,2048,1};
+  groundvector[0]=ground{-32,0,4096,1};
 
-  groundvector[1]=ground{32,-48,96,-47};
-  groundvector[1]=ground{128,-48,192,-47};
+  groundvector[1]=ground{128,-48,32,1};
+  groundvector[2]=ground{192,-48,32,1};
 }
 int main() {
   init();
