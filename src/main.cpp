@@ -13,9 +13,7 @@ sf::Keyboard::Key rightkey = sf::Keyboard::Key::Right,
                   startkey = sf::Keyboard::Key::Enter,
                   selectkey = sf::Keyboard::Key::C;
 sf::View view({0.f, 0.f}, {160.f, 144.f});
-bool groundcheck=false;
-bool rightwallcheck=false;
-bool leftwallcheck=false;
+bool groundcheck=false,doublejump=true;
 
 float Lerp(float A, float B, float Alpha) {
   return A * (1 - Alpha) + B * Alpha;
@@ -29,7 +27,7 @@ std::vector<ground> groundvector;
 struct entity{
     int x=0,y=0;
     float xvelocity=0,yvelocity=0;
-    int vertx=-4,verty=-8,vertx2=4,verty2=0;
+    int vertx=-4,verty=-1,vertx2=4,verty2=0;
 };
 entity player;
 
@@ -88,66 +86,36 @@ void collisioncheck(){
       }
   }
   if(!groundcheck)player.y--;
-
-  rightwallcheck=false;
-  player.x++;
-  for(int i=0;i<groundvector.size();i++){
-    if(overlap(player,groundvector[i])){
-      rightwallcheck=true;
-      if(player.xvelocity>0)player.xvelocity=0;
-      while(overlap(player,groundvector[i]))player.x--;
-      break;
-      }
-  }
-  if(!rightwallcheck)player.x--;
-
-  leftwallcheck=false;
-  player.x--;
-  for(int i=0;i<groundvector.size();i++){
-    if(overlap(player,groundvector[i])){
-      leftwallcheck=true;
-      if(player.xvelocity<0)player.xvelocity=0;
-      while(overlap(player,groundvector[i]))player.x++;
-      break;
-      }
-  }
-  if(!leftwallcheck)player.x++;
 }
 
 
 void update() {
-  view.setCenter({Lerp(view.getCenter().x,float(player.x),0.5f),Lerp(view.getCenter().y,float(player.y),0.5f)});
+  view.setCenter({Lerp(view.getCenter().x,float(player.x+64),0.5f),-64});
   
   collisioncheck();
 
-  if(groundcheck)player.yvelocity=0;
+  if(groundcheck){player.yvelocity=0;doublejump=true;}
   else player.yvelocity+=0.5f;
-  if(right>0)player.xvelocity+=0.5;
-  else if(left>0)player.xvelocity-=0.5;
-  else{
-    if(player.xvelocity>0)player.xvelocity-=0.5f;
-    else if(player.xvelocity<0)player.xvelocity+=0.5f;
-  }
+
+  if(player.xvelocity>2)player.xvelocity-=0.5f;
+
   if(player.xvelocity>2)player.xvelocity-=0.5;
-  if(player.xvelocity<-2)player.xvelocity+=0.5;
+  if(player.xvelocity<2)player.xvelocity=2;
   if(confirm==2){
     if(groundcheck)player.yvelocity=-7;
-    else{
-      if(leftwallcheck){
-        player.yvelocity=-5;
-        player.xvelocity=2;
-      }
-      else if(rightwallcheck){
-        player.yvelocity=-5;
-        player.xvelocity=-2;
-      }
-    }
+    else if(doublejump){doublejump=false;player.yvelocity=-7;}
+  }
+  if(select==2&&player.xvelocity==2){
+    player.xvelocity=10;
   }
   collisioncheck();
   player.x+=player.xvelocity;
-  player.y+=player.yvelocity;
-
-  
+  if(player.yvelocity<0)player.y+=player.yvelocity;
+  else for(int i=0;i<player.yvelocity;i++){
+    player.y++;
+    collisioncheck();
+    if(groundcheck){player.yvelocity=0;doublejump=true;}
+  }
 }
 
 void input(){
@@ -185,12 +153,14 @@ void render() {
   window.display();
 }
 void init() {
+  view.setCenter({float(player.x+64),-64});
   window.setFramerateLimit(60);
   window.setVerticalSyncEnabled(true);
   groundvector.resize(3);
-  groundvector[0]=ground{-64,0,64,16};
-  groundvector[1]=ground{32,-64,48,0};
-  groundvector[2]=ground{-48,-64,-32,0};
+  groundvector[0]=ground{-64,0,2048,1};
+
+  groundvector[1]=ground{32,-48,96,-47};
+  groundvector[1]=ground{128,-48,192,-47};
 }
 int main() {
   init();
